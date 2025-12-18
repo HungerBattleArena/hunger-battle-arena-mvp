@@ -26,7 +26,7 @@ git clone <your-repo-url>
 ### Step 2: Navigate to the project directory
 ```bash
 Copy code
-cd .\prototype
+cd .\prototype\
 ```
 (Adjust the path if your local directory is different.)
 ### Step 3: Run the prototype
