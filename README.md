@@ -1,5 +1,3 @@
-viết markdown bằng tienesga nh cho tôi
-Nội dung:
 # Hunger Battle Arena – Prototype
 ## 🎮 Game Overview
 - **Hunger Battle Arena** is a fast-paced **PVP / PVE survival game** with real-time betting mechanics.
