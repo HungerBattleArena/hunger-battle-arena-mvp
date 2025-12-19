@@ -10,35 +10,32 @@
 
 🚧 More exciting modes such as **multiplayer**, extended PVP features, and advanced mechanics will be developed in future versions.
 
-## 📂 Project Structure
+## 📦 Prerequisites
 
-```text
-prototype/
- └── prototype.html
-```
-This prototype runs directly in the browser and does not require a backend.
-## 🚀 How to Run the Project
+### Before you begin, make sure you have:
+
+- Windows OS
+
+- A modern web browser (Chrome, Edge, or Firefox)
+
+- No backend, build tools, or external dependencies are required.
+## 🚀 Getting Started
 
 ### Step 1: Clone the repository
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/TouchGrassLabs/hunger-battle-arena-mvp.git
 ```
 ### Step 2: Navigate to the project directory
 ```bash
-Copy code
 cd .\prototype\
 ```
-(Adjust the path if your local directory is different.)
 ### Step 3: Run the prototype
 On Windows, simply run:
 ```bash
 start .\prototype.html
 ```
-This will open the game prototype in your default web browser.
-## ✅ Requirements
-- Windows OS
-- Any modern web browser (Chrome, Edge, Firefox)
-- No additional dependencies or installations are required.
+The game will automatically open in your default web browser.
+
 ## 🧪 Notes
 - This is an early prototype for gameplay experimentation.
 - Betting, viewer interaction, and advanced multiplayer features are planned for later stages.
