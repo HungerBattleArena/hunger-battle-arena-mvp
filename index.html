@@ -317,6 +317,22 @@
             border-color: var(--neon-gold);
             box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
         }
+
+        .wait-spinner {
+            width: 56px;
+            height: 56px;
+            border-radius: 999px;
+            border: 3px solid rgba(255, 255, 255, 0.15);
+            border-top-color: var(--neon-blue);
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 18px rgba(0, 243, 255, 0.35);
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .wait-card {
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.35);
+        }
     </style>
 </head>
 <body>
@@ -476,6 +492,54 @@
                     <button id="btn-lock-bet" class="btn-cyber px-10 py-3 text-lg font-bold w-full md:w-auto" onclick="lockBetAndEnter()">Lock Bet</button>
                 </div>
                 <div class="mt-3 text-xs text-gray-500">Betting closes when the fighter starts the match.</div>
+            </div>
+        </div>
+
+        <!-- VIEWER WAITING SCREEN -->
+        <div id="screen-viewer-wait" class="hidden absolute inset-0 flex items-center justify-center pointer-events-auto z-50 bg-black/95">
+            <div class="glass-panel w-full max-w-4xl p-10 relative fade-in">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 border-b border-gray-800 pb-6 mb-8">
+                    <div>
+                        <h2 class="text-4xl font-black text-white">BET LOCKED</h2>
+                        <p class="text-gray-400 mt-1">Waiting for the fighter to start the match.</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="wait-spinner"></div>
+                        <div class="text-right">
+                            <div class="text-xs uppercase tracking-widest text-gray-500">Room</div>
+                            <div class="text-2xl text-white font-bold" id="wait-room-name">ROOM</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="wait-card rounded-lg p-6">
+                        <div class="text-xs uppercase tracking-widest text-gray-500">Your bet</div>
+                        <div class="mt-3 flex items-end justify-between">
+                            <div class="text-3xl font-bold text-white" id="wait-user-bet">0</div>
+                            <div class="text-sm text-gray-400">Side: <span class="text-white font-bold" id="wait-user-side">-</span></div>
+                        </div>
+                        <div class="mt-4 text-xs text-gray-500">Status</div>
+                        <div class="status-pill open mt-2" id="wait-room-status">BETTING OPEN</div>
+                    </div>
+
+                    <div class="wait-card rounded-lg p-6">
+                        <div class="text-xs uppercase tracking-widest text-gray-500">Room pool</div>
+                        <div class="mt-3 text-2xl text-gold-400 font-mono" id="wait-room-total">0</div>
+                        <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
+                            <div class="bg-black/40 p-3 rounded border border-cyan-500/30">
+                                <div class="text-cyan-400">WIN</div>
+                                <div class="text-white font-bold" id="wait-room-win">0</div>
+                                <div class="text-xs text-gray-500" id="wait-room-win-count">0 bettors</div>
+                            </div>
+                            <div class="bg-black/40 p-3 rounded border border-pink-500/30">
+                                <div class="text-pink-400">LOSE</div>
+                                <div class="text-white font-bold" id="wait-room-lose">0</div>
+                                <div class="text-xs text-gray-500" id="wait-room-lose-count">0 bettors</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -816,6 +880,8 @@ const STATE = {
     userBetAmount: 0,
     viewerIP: 0,
     viewerCooldowns: {},
+    waitingForFighterStart: false,
+    waitInterval: null,
 
     // Map & Zone
     hexes: [],
@@ -1460,6 +1526,7 @@ function goToViewerRooms() {
 function goBackToMenu() { 
     document.getElementById('screen-viewer-rooms').classList.add('hidden'); 
     document.getElementById('screen-viewer-bet').classList.add('hidden');
+    stopViewerWait();
     document.getElementById('screen-fighter-room').classList.add('hidden');
     document.getElementById('screen-main-menu').classList.remove('hidden'); 
 }
@@ -1499,6 +1566,10 @@ function updateFighterRoomUI() {
 function startMatchAsFighter() {
     fighterRoom.state = 'CLOSED';
     updateFighterRoomUI();
+    if (STATE.waitingForFighterStart && selectedRoom) {
+        selectedRoom.state = 'CLOSED';
+        updateViewerWaitScreen();
+    }
     startGameAsFighter();
 }
 
@@ -1521,6 +1592,75 @@ function selectBetSide(side) {
     document.getElementById('bet-side-lose').classList.toggle('selected', side === 'LOSE');
 }
 
+function updateViewerWaitScreen() {
+    if (!selectedRoom) return;
+    document.getElementById('wait-room-name').innerText = selectedRoom.name;
+    document.getElementById('wait-user-bet').innerText = STATE.userBetAmount.toLocaleString();
+    document.getElementById('wait-user-side').innerText = STATE.faction || '-';
+    document.getElementById('wait-room-total').innerText = selectedRoom.totalBet.toLocaleString();
+    document.getElementById('wait-room-win').innerText = selectedRoom.winBet.toLocaleString();
+    document.getElementById('wait-room-lose').innerText = selectedRoom.loseBet.toLocaleString();
+    document.getElementById('wait-room-win-count').innerText = `${selectedRoom.winCount} bettors`;
+    document.getElementById('wait-room-lose-count').innerText = `${selectedRoom.loseCount} bettors`;
+    const statusEl = document.getElementById('wait-room-status');
+    const isOpen = selectedRoom.state === 'OPEN';
+    statusEl.innerText = isOpen ? 'BETTING OPEN' : 'BETTING CLOSED';
+    statusEl.className = `status-pill ${isOpen ? 'open' : 'closed'}`;
+}
+
+function beginViewerMatchFromWait() {
+    if (!STATE.waitingForFighterStart) return;
+    STATE.waitingForFighterStart = false;
+    if (STATE.waitInterval) {
+        clearInterval(STATE.waitInterval);
+        STATE.waitInterval = null;
+    }
+    document.getElementById('screen-viewer-wait').classList.add('hidden');
+    document.getElementById('hud-viewer').classList.remove('hidden');
+    updateViewerHUD();
+    generateViewerDeck(STATE.faction);
+    startMatch();
+}
+
+function showViewerWaitScreen() {
+    document.getElementById('screen-viewer-bet').classList.add('hidden');
+    document.getElementById('hud-viewer').classList.add('hidden');
+    document.getElementById('screen-viewer-wait').classList.remove('hidden');
+    STATE.waitingForFighterStart = true;
+    updateViewerWaitScreen();
+
+    if (STATE.waitInterval) clearInterval(STATE.waitInterval);
+    STATE.waitInterval = setInterval(() => {
+        if (!STATE.waitingForFighterStart || !selectedRoom) return;
+        if (selectedRoom.state === 'CLOSED') {
+            beginViewerMatchFromWait();
+        }
+    }, 500);
+
+    // Auto-close room if fighter doesn't start (prototype fallback)
+    if (STATE.waitAutoCloseTimer) clearTimeout(STATE.waitAutoCloseTimer);
+    STATE.waitAutoCloseTimer = setTimeout(() => {
+        if (!STATE.waitingForFighterStart || !selectedRoom) return;
+        selectedRoom.state = 'CLOSED';
+        updateViewerWaitScreen();
+        beginViewerMatchFromWait();
+    }, 5000);
+}
+
+function stopViewerWait() {
+    STATE.waitingForFighterStart = false;
+    if (STATE.waitInterval) {
+        clearInterval(STATE.waitInterval);
+        STATE.waitInterval = null;
+    }
+    if (STATE.waitAutoCloseTimer) {
+        clearTimeout(STATE.waitAutoCloseTimer);
+        STATE.waitAutoCloseTimer = null;
+    }
+    const waitScreen = document.getElementById('screen-viewer-wait');
+    if (waitScreen) waitScreen.classList.add('hidden');
+}
+
 function lockBetAndEnter() {
     if (!selectedRoom || selectedRoom.state !== 'OPEN') {
         alert('Betting is closed.');
@@ -1535,16 +1675,20 @@ function lockBetAndEnter() {
         alert('Enter a valid bet amount.');
         return;
     }
+    selectedRoom.totalBet += amount;
+    if (selectedBetSide === 'WIN') {
+        selectedRoom.winBet += amount;
+        selectedRoom.winCount += 1;
+    } else {
+        selectedRoom.loseBet += amount;
+        selectedRoom.loseCount += 1;
+    }
     STATE.userBetAmount = amount;
     STATE.faction = selectedBetSide;
     STATE.role = 'VIEWER';
     STATE.viewerIP = 200;
     STATE.viewerCooldowns = {};
-    document.getElementById('screen-viewer-bet').classList.add('hidden');
-    document.getElementById('hud-viewer').classList.remove('hidden');
-    updateViewerHUD();
-    generateViewerDeck(selectedBetSide);
-    startMatch();
+    showViewerWaitScreen();
 }
 
 function updateViewerHUD() {
